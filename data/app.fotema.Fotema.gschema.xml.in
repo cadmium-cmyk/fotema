@@ -38,5 +38,17 @@
       <default>false</default>
       <summary>Extract videos from Android motion photos.</summary>
     </key>
+    <key name="backend-type" type="s">
+      <default>'Local'</default>
+      <summary>Library backend type. 'Local', 'Immich'.</summary>
+    </key>
+    <key name="immich-url" type="s">
+      <default>''</default>
+      <summary>URL for Immich server.</summary>
+    </key>
+    <key name="immich-api-key" type="s">
+      <default>''</default>
+      <summary>API key for Immich server.</summary>
+    </key>
   </schema>
 </schemalist>

@@ -13,6 +13,7 @@ use gtk::glib;
 use tracing::{error, info};
 
 use crate::app::AlbumSort;
+use crate::app::BackendType;
 use crate::app::FaceDetectionMode;
 use crate::app::{Settings, SettingsState};
 use crate::fl;
@@ -24,6 +25,9 @@ pub struct PreferencesDialog {
     parent: adw::ApplicationWindow,
     dialog: adw::PreferencesDialog,
     album_sort: adw::ComboRow,
+    backend_type: adw::ComboRow,
+    immich_url_row: adw::EntryRow,
+    immich_api_key_row: adw::PasswordEntryRow,
 
     settings_state: SettingsState,
 
@@ -61,6 +65,12 @@ pub enum PreferencesInput {
     UpdateProcessMotionPhotos(bool),
 
     Sort(AlbumSort),
+
+    UpdateBackendType(BackendType),
+
+    UpdateImmichUrl(String),
+
+    UpdateImmichApiKey(String),
 
     ChoosePicturesDir,
 }
@@ -102,6 +112,42 @@ impl SimpleAsyncComponent for PreferencesDialog {
                             set_icon_name: "folder-open-symbolic",
                             set_tooltip_text: Some(&fl!("prefs-library-section-pictures-dir", "tooltip")),
                             connect_clicked => PreferencesInput::ChoosePicturesDir,
+                        }
+                    }
+                },
+
+                add = &adw::PreferencesGroup {
+                    set_title: &fl!("prefs-backend-section", "title"),
+                    set_description: Some(&fl!("prefs-backend-section", "description")),
+
+                    #[local_ref]
+                    backend_type_row -> adw::ComboRow {
+                        set_title: &fl!("prefs-backend-type"),
+                        set_subtitle: &fl!("prefs-backend-type", "subtitle"),
+
+                        connect_selected_item_notify[sender] => move |row| {
+                            let mode = BackendType::from_repr(row.selected()).unwrap_or_default();
+                            let _ = sender.input_sender().send(PreferencesInput::UpdateBackendType(mode));
+                        }
+                    },
+
+                    #[local_ref]
+                    immich_url_row -> adw::EntryRow {
+                        set_title: &fl!("prefs-backend-immich-url", "title"),
+
+                        connect_changed[sender] => move |row| {
+                            let text = row.text().to_string();
+                            let _ = sender.input_sender().send(PreferencesInput::UpdateImmichUrl(text));
+                        }
+                    },
+
+                    #[local_ref]
+                    immich_api_key_row -> adw::PasswordEntryRow {
+                        set_title: &fl!("prefs-backend-immich-api-key", "title"),
+
+                        connect_changed[sender] => move |row| {
+                            let text = row.text().to_string();
+                            let _ = sender.input_sender().send(PreferencesInput::UpdateImmichApiKey(text));
                         }
                     }
                 },
@@ -193,12 +239,28 @@ impl SimpleAsyncComponent for PreferencesDialog {
         ]);
         album_sort_row.set_model(Some(&list));
 
+        let backend_type_row = adw::ComboRow::new();
+        let backend_list = gtk::StringList::new(&[
+            &fl!("prefs-backend-type", "local"),
+            &fl!("prefs-backend-type", "immich"),
+        ]);
+        backend_type_row.set_model(Some(&backend_list));
+
+        let immich_url_row = adw::EntryRow::new();
+        immich_url_row.set_text(&settings_state.read().immich_url);
+
+        let immich_api_key_row = adw::PasswordEntryRow::new();
+        immich_api_key_row.set_text(&settings_state.read().immich_api_key);
+
         let model = Self {
             settings_state: settings_state.clone(),
             parent,
             dialog: dialog.clone(),
             settings: settings_state.read().clone(),
             album_sort: album_sort_row.clone(),
+            backend_type: backend_type_row.clone(),
+            immich_url_row: immich_url_row.clone(),
+            immich_api_key_row: immich_api_key_row.clone(),
         };
 
         let widgets = view_output!();
@@ -224,6 +286,29 @@ impl SimpleAsyncComponent for PreferencesDialog {
                 };
 
                 self.album_sort.set_selected(index);
+
+                let backend_index = match self.settings.backend_type {
+                    BackendType::Local => 0,
+                    BackendType::Immich => 1,
+                };
+                self.backend_type.set_selected(backend_index);
+                self.immich_url_row.set_text(&self.settings.immich_url);
+                self.immich_api_key_row.set_text(&self.settings.immich_api_key);
+            }
+            PreferencesInput::UpdateBackendType(backend_type) => {
+                info!("Update backend type: {:?}", backend_type);
+                self.settings.backend_type = backend_type;
+                *self.settings_state.write() = self.settings.clone();
+            }
+            PreferencesInput::UpdateImmichUrl(url) => {
+                info!("Update Immich URL");
+                self.settings.immich_url = url;
+                *self.settings_state.write() = self.settings.clone();
+            }
+            PreferencesInput::UpdateImmichApiKey(api_key) => {
+                info!("Update Immich API key");
+                self.settings.immich_api_key = api_key;
+                *self.settings_state.write() = self.settings.clone();
             }
             PreferencesInput::UpdateShowSelfies(show_selfies) => {
                 info!("Update show selfies: {}", show_selfies);
