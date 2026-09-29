@@ -285,30 +285,44 @@ impl SimpleAsyncComponent for PreferencesDialog {
                     AlbumSort::Descending => 1,
                 };
 
-                self.album_sort.set_selected(index);
+                if self.album_sort.selected() != index {
+                    self.album_sort.set_selected(index);
+                }
 
                 let backend_index = match self.settings.backend_type {
                     BackendType::Local => 0,
                     BackendType::Immich => 1,
                 };
-                self.backend_type.set_selected(backend_index);
-                self.immich_url_row.set_text(&self.settings.immich_url);
-                self.immich_api_key_row.set_text(&self.settings.immich_api_key);
+                if self.backend_type.selected() != backend_index {
+                    self.backend_type.set_selected(backend_index);
+                }
+                if self.immich_url_row.text().as_str() != self.settings.immich_url {
+                    self.immich_url_row.set_text(&self.settings.immich_url);
+                }
+                if self.immich_api_key_row.text().as_str() != self.settings.immich_api_key {
+                    self.immich_api_key_row.set_text(&self.settings.immich_api_key);
+                }
             }
             PreferencesInput::UpdateBackendType(backend_type) => {
-                info!("Update backend type: {:?}", backend_type);
-                self.settings.backend_type = backend_type;
-                *self.settings_state.write() = self.settings.clone();
+                if self.settings.backend_type != backend_type {
+                    info!("Update backend type: {:?}", backend_type);
+                    self.settings.backend_type = backend_type;
+                    *self.settings_state.write() = self.settings.clone();
+                }
             }
             PreferencesInput::UpdateImmichUrl(url) => {
-                info!("Update Immich URL");
-                self.settings.immich_url = url;
-                *self.settings_state.write() = self.settings.clone();
+                if self.settings.immich_url != url {
+                    info!("Update Immich URL");
+                    self.settings.immich_url = url;
+                    *self.settings_state.write() = self.settings.clone();
+                }
             }
             PreferencesInput::UpdateImmichApiKey(api_key) => {
-                info!("Update Immich API key");
-                self.settings.immich_api_key = api_key;
-                *self.settings_state.write() = self.settings.clone();
+                if self.settings.immich_api_key != api_key {
+                    info!("Update Immich API key");
+                    self.settings.immich_api_key = api_key;
+                    *self.settings_state.write() = self.settings.clone();
+                }
             }
             PreferencesInput::UpdateShowSelfies(show_selfies) => {
                 info!("Update show selfies: {}", show_selfies);
