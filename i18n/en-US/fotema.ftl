@@ -264,6 +264,22 @@ prefs-library-section-pictures-dir =
   .title = Pictures Directory
   .tooltip = Choose pictures directory.
 
+# Section header for library backend selection
+prefs-backend-section =
+  .title = Backend
+  .description = Configure the photo library backend.
+
+prefs-backend-type = Backend Type
+  .subtitle = Select photo library provider.
+  .local = Local Files
+  .immich = Immich
+
+prefs-backend-immich-url = Server URL
+  .title = Immich Server URL
+
+prefs-backend-immich-api-key = API Key
+  .title = Immich API Key
+
 ## Progress bar for background tasks
 
 # Extracting details from photo EXIF data

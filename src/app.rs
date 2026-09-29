@@ -144,6 +144,26 @@ impl FromStr for FaceDetectionMode {
     }
 }
 
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, AsRefStr, FromRepr)]
+#[repr(u32)]
+pub enum BackendType {
+    #[default]
+    Local,
+    Immich,
+}
+
+impl FromStr for BackendType {
+    type Err = strum::ParseError;
+
+    fn from_str(s: &str) -> ::core::result::Result<BackendType, Self::Err> {
+        match s {
+            "Local" => ::core::result::Result::Ok(BackendType::Local),
+            "Immich" => ::core::result::Result::Ok(BackendType::Immich),
+            _ => ::core::result::Result::Err(::strum::ParseError::VariantNotFound),
+        }
+    }
+}
+
 /// Settings the user can change in the preferences dialog.
 /// Should not include any non-preference dialog settings like window size or maximization state.
 #[derive(Clone, Debug, Default)]
@@ -168,6 +188,15 @@ pub struct Settings {
     /// Base path of pictures directory inside Flatpak sandbox.
     /// Will be under `/run/users/<uid>/docs/<doc-id>/...`
     pub library_base_dir: FlatpakPathBuf,
+
+    /// Library backend type (Local or Immich).
+    pub backend_type: BackendType,
+
+    /// Immich server URL.
+    pub immich_url: String,
+
+    /// Immich API key.
+    pub immich_api_key: String,
 }
 
 /// Active settings
@@ -1169,6 +1198,10 @@ impl App {
                 .unwrap_or(AlbumSort::Ascending),
             is_onboarding_complete: gio_settings.boolean("onboarding-complete"),
             library_base_dir,
+            backend_type: BackendType::from_str(&gio_settings.string("backend-type"))
+                .unwrap_or(BackendType::Local),
+            immich_url: gio_settings.string("immich-url").to_string(),
+            immich_api_key: gio_settings.string("immich-api-key").to_string(),
         })
     }
 
@@ -1184,6 +1217,9 @@ impl App {
             "pictures-base-dir-b64",
             &path_encoding::to_base64(&settings.library_base_dir.sandbox_path),
         )?;
+        gio_settings.set_string("backend-type", settings.backend_type.as_ref())?;
+        gio_settings.set_string("immich-url", &settings.immich_url)?;
+        gio_settings.set_string("immich-api-key", &settings.immich_api_key)?;
         Ok(())
     }
 }
